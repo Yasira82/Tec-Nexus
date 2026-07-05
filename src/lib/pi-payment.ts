@@ -29,8 +29,8 @@ export interface PaymentResult {
   message?:   string;
 }
 
-// TODO(new app): set your app slug.
-const APP_SOURCE = 'app';
+// Nexus slug — payment-service resolves PI_API_KEY_NEXUS.
+const APP_SOURCE = 'nexus';
 
 const HUB_URL = process.env.NEXT_PUBLIC_HUB_URL ?? 'https://hub.tecosystem.app';
 

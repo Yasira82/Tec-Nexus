@@ -8,8 +8,8 @@ import { jwtVerify }                 from 'jose';
 //   §3:    VERIFIED ENTRY — the landing script confirms the session is
 //          server-visible (/api/auth/me) BEFORE navigating into the app.
 const ALLOWED_AUDIENCES = [
-  'https://your-app.vercel.app',
-  'https://your-app.tecosystem.app',
+  'https://nexus.tecosystem.app',
+  'https://tec-nexus.vercel.app',
 ];
 const DEFAULT_REDIRECT = '/app';
 
