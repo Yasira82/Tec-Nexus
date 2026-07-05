@@ -1,15 +1,73 @@
-# TEC Domain App Template — Claude Code Instructions
+# TEC Nexus — Claude Code Instructions
 
-## What This Repo Is
+> ⚡ **SESSION START:** اقرأ `knowledge-base/C-02___CURRENT_STATE_.md` + **app charter
+> `knowledge-base/C-109___NEXUS_INSTITUTIONAL_CHARTER.md`** من `yasira82/tec-knowledge-base` (branch: `main`).
 
-The **golden starter template** for a new app in the TEC Federated Platform.
-It ships a correct, Portal-ready skeleton: Hub SSO, dual-mode Pi payments,
-CSRF, legal pages, and CI policy guards. Clone it, run the "New app setup"
-checklist below, and you have a compliant app — no missing pieces.
+## What This App Is
 
-**Reference of record:** `yasira82/tec-knowledge-base` — especially
-`C-12_Dual_Mode_Payment.md` (payment + anti-regression) and
-`audits/PORTAL_SUBMISSION_RUNBOOK_*.md`.
+**System of Coordination** for the TEC Federated Platform — the **Economic
+Coordination Infrastructure** (C-109). Nexus is the orchestration fabric: when
+multiple actors (users, merchants, services, AI agents) must cooperate on an
+economic outcome, Nexus runs the governed workflow. It answers one question:
+
+```
+"What should happen next?"
+```
+
+Nexus sits in the pipeline **after Zone** (verified data) and feeds **TEC AI**
+(reasoning): Connection → Zone → Analytics → **Nexus** → TEC AI.
+
+Built from `tec-template-base` (Next.js 15 frontend).
+
+**Current Phase: Nexus V0 — App Scaffold & Portal Readiness.** Identity / domain /
+slug / legal + themed home shell + **Nexus Pro payment surface** (the Pi Portal
+"Process a Transaction" gate) done. The workflow engine is **V1+, post-Portal**.
+Not yet deployed.
+
+---
+
+## Pi App Identity
+
+| Field | Value |
+|-------|-------|
+| **App** | TEC Nexus |
+| **Domain** | `https://nexus.tecosystem.app` |
+| **Pi App ID** | ⏳ TBD — register at Pi Developer Portal · then Vercel `NEXT_PUBLIC_PI_APP_ID` |
+| **APP_SOURCE slug** | `nexus` (payment-service resolves `PI_API_KEY_NEXUS`) |
+| **PI_SANDBOX** | `false` (Mainnet) |
+
+---
+
+## Nexus-Specific Rules (C-109)
+
+### The coordination boundary — orchestration vs execution
+Nexus **OWNS**: workflow definition + execution, execution routing (which service
+handles which step), actor coordination (sync + async), workflow state + history,
+conditional logic + branching. Nexus does **NOT OWN**:
+- **Business rules inside workflows** → the domain services own them.
+- **Governance authority** → SYSTEM (C-110) approves which workflow types are allowed.
+- **Payment processing** → tec-payment-service. **Never** a workflow that transfers Pi outside payment-service (C-109 §6).
+- **Any entity's truth** → each service owns its own entity truth; Nexus coordinates by **ID only**.
+- **AI reasoning** → TEC AI (C-104).
+
+### Saga = the financial-workflow pattern (C-109 §5)
+Distributed transactions use the **saga pattern** with compensating actions
+(e.g. payment fails → cancel payment, release inventory). Workflows are
+**idempotent** (at-least-once execution). Workflow state = strong consistency.
+
+### ActorContext propagation (C-109 P1-1)
+Every workflow step carries the **original actor's** ActorContext (C-47 §4) — not
+replaced with a ServiceActor — so the audit trail traces back to the human actor.
+Cross-service calls: ServiceActor + `x-internal-key` + `INTERNAL_SECRET`.
+
+### Isolation / Fail Closed (P6, C-109 §6)
+Missing actor context on a workflow trigger → **REJECT**. Unknown workflow type →
+**REJECT**. SYSTEM policy violation → **REJECT** with audit log. Derive identity
+from the `tec_user` session cookie server-side, never from a query param or body.
+
+**Reference of record:** `yasira82/tec-knowledge-base` —
+`C-109___NEXUS_INSTITUTIONAL_CHARTER.md` (charter) + `C-12_Dual_Mode_Payment.md`
+(payment anti-regression) + `C-123` (session/cookies) + `C-121` (knowledge pipeline).
 
 ---
 
@@ -43,11 +101,14 @@ if (isHubNavigation() || !(window as any).Pi || !piReady) {
 }
 // Mode 2: standalone — createPaymentRecord() then createU2APayment() (src/lib/pi-payment.ts)
 ```
+> The hub-entry signal is `__tec_hub_entry` (sessionStorage) **OR** referrer — the
+> landing page (C-123 LAW 2) made referrer-alone unreliable (C-12 §3). Do not remove it.
 
 ### ADR-009 — Unified payment contract
 `amount` is a **number**; gateway path is **`/api/payment/*`** (singular); the only
 inter-service header is **`x-internal-key`** + `INTERNAL_SECRET`. Don't re-declare
-payment Zod locally — shapes live in `@yasser172/tec-sdk`.
+payment Zod locally — shapes live in `@yasser172/tec-sdk`. Approve under
+`PI_API_KEY_NEXUS` (never the default Hub key — the Analytics approve→502 lesson, C-12 §11).
 
 ### Two-SDK boundary
 ```
@@ -61,67 +122,55 @@ Identity is derived from the `tec_user` cookie server-side — **never from the 
 
 ---
 
-## What's included
+## Setup status + Roadmap (C-109 §10)
 
 ```
-middleware.ts                              CSRF (double-submit OR Origin) + page guard
-src/app/api/auth/sso-callback/route.ts     Hub SSO landing (open-redirect-safe)
-src/app/api/auth/refresh/route.ts          token refresh
-src/app/api/bff/payment/{create,approve,complete,resolve-incomplete}/route.ts
-src/app/api/bff/items/route.ts             example domain route (copy this pattern)
-src/app/api/health/route.ts                health endpoint (C-92/C-96) — fail-safe, public, never 500s
-src/lib/pi-payment.ts                      createPaymentRecord + createU2APayment
-src/lib/pi/PiRuntime.ts                    PAL — single choke-point for window.Pi.* (R1)
-src/lib/pi/PiCircuitBreaker.ts             CLOSED→OPEN→HALF_OPEN (3 fails → 60s)
-src/lib/flags.ts                           feature flags (NEXT_PUBLIC_FLAG_*) + useFlag
-src/lib/observability/logger.ts            structured JSON logger (log.info/warn/error) — no silent failures (C-96)
-src/lib/observability/reportError.ts       Sentry-ready error reporter (single swap-point)
-src/app/privacy/page.tsx · terms/page.tsx  Pi Portal legal pages
-src/styles/tec-design-tokens.css           import in app/layout.tsx
-.github/workflows/ci.yml                   payment-policy + CSRF guard + lint/typecheck/test/build
+Nexus V0 — App Scaffold & Portal Readiness (customized from template):
+  ✅ package.json name = tec-nexus · APP_SOURCE = 'nexus'
+  ✅ sso-callback ALLOWED_AUDIENCES → nexus.tecosystem.app + tec-nexus.vercel.app
+  ✅ privacy + terms → TEC Nexus / nexus.tecosystem.app
+  ✅ NEW-A: no NEXT_PUBLIC_API_GATEWAY_URL / Railway host in the client bundle
+  ✅ layout Pi init is hub-entry-aware (C-12 §3 / ADR-007 foreign-session skip)
+  ✅ /app themed as the Coordination home shell + Nexus Pro (real Pi U2A payment)
+
+Next (before live):
+  □ Register Pi App ID (Pi Developer Portal) → set Vercel NEXT_PUBLIC_PI_APP_ID +
+    API_GATEWAY_URL · INTERNAL_SECRET · SSO_SECRET · PI_SANDBOX=false.
+  □ payment-service: set PI_API_KEY_NEXUS on Railway (approve→502 otherwise, C-12 §11).
+  □ Hub SSO: add nexus.tecosystem.app + tec-nexus.vercel.app to Hub /api/auth/sso
+    ALLOWED_TARGETS + Hub domain registry (both in this change).
+  □ Deploy (Vercel) + runtime-verify login (C-123) + a real Nexus Pro payment
+    Mode 1 (Hub) AND Mode 2 (standalone) — completes the Portal "Process a Transaction" gate.
+
+Nexus V1+ (post-Portal — C-109 §10): Phase 1 sequential workflows + payment/asset
+  saga rollback + workflow history API → Phase 2 parallel workflows + TEC AI
+  routing + merchant templates → Phase 3 AI-agent workflows.
 ```
 
-**v2 (production-ready by default):** every new app ships
-- `/api/health` — uniform C-92 signal (platform health runtime + observability scrape + SLO/runtime-evidence loop);
-- structured `log` + `reportError` — use `log.error`/`reportError` in catch blocks (a silent error handler is an invisible failure, C-96; `reportError` is the one place to wire Sentry per app);
-- `PiRuntime` (PAL) + `PiCircuitBreaker` — never call `window.Pi.*` directly; go through PiRuntime so an SDK change is a one-file fix (R1) and flapping is contained;
-- `flags.ts` — feature flags from day one (`NEXT_PUBLIC_FLAG_<NAME>`);
-- coverage gate — `npm run test:coverage` (add devDep `@vitest/coverage-v8`; 60% floor, raise as the app grows).
-
----
-
-## New app setup checklist
-
-```
-□ package.json: set "name"
-□ middleware.ts: adjust PROTECTED_ROUTES
-□ sso-callback/route.ts: set ALLOWED_AUDIENCES + DEFAULT_REDIRECT to your domain
-□ src/lib/pi-payment.ts + payment/create: set APP_SOURCE slug
-□ privacy/page.tsx + terms/page.tsx: set APP / DOMAIN / governing law / contacts
-□ Add ADR-007 isHubNavigation() guard to every buy handler
-□ .env: API_GATEWAY_URL · INTERNAL_SECRET · SSO_SECRET · NEXT_PUBLIC_PI_APP_ID · PI_SANDBOX=false (prod)
-□ Pi Developer Portal: register domain + App ID; set /privacy + /terms URLs
-□ Verify a real Pi payment Mode 1 (via Hub) AND Mode 2 (standalone)
-```
+> Nexus monetization (C-109 §7) is Enterprise Workflows / custom templates. The
+> payment scaffold + `isHubNavigation()` guard are kept for the Portal gate and
+> optionality; any direct buy MUST keep the ADR-007 guard and needs `PI_API_KEY_NEXUS`.
 
 ---
 
 ## What NOT To Do
 
+- Do NOT run a workflow that transfers Pi outside tec-payment-service (C-109 §6)
+- Do NOT put business rules in Nexus — they belong to the domain services (C-109 §4)
+- Do NOT replace the original actor's context with a ServiceActor mid-workflow (C-109 P1-1)
 - Do NOT validate CSRF in a route handler — middleware only (CI blocks it)
 - Do NOT send `amount` as a string, or use `/payments` / `x-service-secret`
 - Do NOT skip the ADR-007 `isHubNavigation()` guard before `window.Pi`
 - Do NOT store tokens in localStorage; do NOT derive identity from the body
 - Do NOT add `NEXT_PUBLIC_*` for internal service URLs or `INTERNAL_SECRET`
-- Do NOT use an open `redirect` param without the same-origin guard (open redirect)
 
 ---
 
 ## Commit Convention
 
 ```
-feat(scope):  new feature      fix(payment): payment flow fix (test carefully)
-fix(scope):   bug fix          chore(scope): build/config
+feat(nexus):  new coordination feature   fix(payment): payment flow fix (test carefully)
+fix(nexus):   bug fix                     chore(scope):  build/config
 ```
 
 ---
