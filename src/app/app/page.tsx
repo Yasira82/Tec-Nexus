@@ -7,6 +7,7 @@
 // transactions. Nexus owns the workflow — never the business rules inside it,
 // payment truth, or any entity's truth (those stay with their owning services).
 import Link from 'next/link';
+import { InviteCard } from '@/components/referral/InviteCard';
 import { usePiAuth } from '@yasser172/tec-auth';
 import { TEC_COLORS } from '@yasser172/tec-ui';
 import { NexusPro } from './components/NexusPro';
@@ -80,6 +81,7 @@ export default function NexusHome() {
           services and are coordinated by ID only (C-109 §4). Every Pi transfer goes
           through tec-payment-service; Nexus never bypasses it (P6, §6).
         </p>
+        <InviteCard />
       </div>
     </main>
   );

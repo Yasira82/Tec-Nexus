@@ -22,7 +22,7 @@ Built from `tec-template-base` (Next.js 15 frontend).
 **Current Phase: Nexus V0 — App Scaffold & Portal Readiness.** Identity / domain /
 slug / legal + themed home shell + **Nexus Pro payment surface** (the Pi Portal
 "Process a Transaction" gate) done. The workflow engine is **V1+, post-Portal**.
-Not yet deployed.
+Deployed (Mainnet) · Pi App ID registered · env set · payment live · referral growth loop wired (C-133).
 
 ---
 
@@ -32,7 +32,7 @@ Not yet deployed.
 |-------|-------|
 | **App** | TEC Nexus |
 | **Domain** | `https://nexus.tecosystem.app` |
-| **Pi App ID** | ⏳ TBD — register at Pi Developer Portal · then Vercel `NEXT_PUBLIC_PI_APP_ID` |
+| **Pi App ID** | ✅ Registered (Mainnet) · Vercel `NEXT_PUBLIC_PI_APP_ID` |
 | **APP_SOURCE slug** | `nexus` (payment-service resolves `PI_API_KEY_NEXUS`) |
 | **PI_SANDBOX** | `false` (Mainnet) |
 
