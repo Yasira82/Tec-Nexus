@@ -6,6 +6,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { TEC_COLORS } from '@yasser172/tec-ui';
 import { getTemplate, TEMPLATES, KIND_META } from '@/lib/nexus/templates';
+import { WorkflowRunner } from './WorkflowRunner';
 
 export function generateStaticParams() {
   return TEMPLATES.map((t) => ({ id: t.id }));
@@ -60,6 +61,8 @@ export default async function WorkflowPage(
         </div>
         <p style={{ fontSize: 14, color: TEC_COLORS.subtext, margin: '12px 0 0', lineHeight: 1.6 }}>{t.purpose}</p>
         <p style={{ fontSize: 12, color: TEC_COLORS.subtext, margin: '8px 0 0' }}><strong style={{ color: TEC_COLORS.text }}>Trigger:</strong> {t.trigger}</p>
+
+        <WorkflowRunner templateId={t.id} />
 
         <h2 style={{ fontSize: 15, fontWeight: 800, color: TEC_COLORS.text, margin: '26px 0 10px' }}>Steps</h2>
         <div style={{ display: 'grid', gap: 10 }}>
