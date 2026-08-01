@@ -8,6 +8,9 @@
 
 import { useState } from 'react';
 import { TEC_COLORS } from '@yasser172/tec-ui';
+import {
+  isHubNavigation, redirectToHubPayment, createPaymentRecord, createU2APayment,
+} from '@/lib/pi-payment';
 
 type StepStatus = 'PENDING' | 'DONE' | 'BLOCKED_ON_PAYMENT' | 'FAILED' | 'COMPENSATED';
 type RunStatus  = 'PENDING' | 'RUNNING' | 'AWAITING_PAYMENT' | 'COMPLETED' | 'COMPENSATING' | 'COMPENSATED' | 'FAILED';
@@ -56,6 +59,56 @@ export function WorkflowRunner({ templateId }: { templateId: string }) {
   const advance = async () => { if (!run) return; const r = await post(`/api/bff/nexus/run/${run.id}/advance`); if (r) setRun(r); };
   const fail    = async () => { if (!run) return; const r = await post(`/api/bff/nexus/run/${run.id}/fail`, { reason: 'Simulated step failure' }); if (r) setRun(r); };
 
+  // After a real payment completes, payment-service emits payment.completed.v1 carrying
+  // the run link → the Nexus consumer resumes the run server-side (async). Poll for it.
+  const pollUntilResumed = async (runId: string, stepIdx: number) => {
+    for (let i = 0; i < 8; i++) {
+      await new Promise((r) => setTimeout(r, 1500));
+      try {
+        const res  = await fetch(`/api/bff/nexus/run/${runId}`, { cache: 'no-store' });
+        const data = await res.json().catch(() => ({}));
+        if (data?.run) {
+          setRun(data.run as Run);
+          if (data.run.status !== 'AWAITING_PAYMENT' || data.run.cursor !== stepIdx) return;
+        }
+      } catch { /* keep polling */ }
+    }
+  };
+
+  // Pay a run's U2A step with REAL Pi. ADR-007: guard before window.Pi — hub entry →
+  // Mode 1 (Hub modal; the run does NOT auto-resume in Mode 1 yet). Standalone Pi
+  // Browser → Mode 2, tagging the payment with { nexusRunId, nexusStepIdx } so the
+  // consumer resumes the run once payment-service confirms completion.
+  const pay = async () => {
+    if (!run || busy) return;
+    const stepIdx = run.cursor;
+    const step    = run.steps.find((s) => s.idx === stepIdx);
+    const amount  = 1; // nominal workflow payment (real Pi, via payment-service)
+    const memo    = `Nexus workflow: ${step?.action ?? 'payment'}`.slice(0, 90);
+    const itemId  = `nexus-run-${run.id}`;
+    const link    = { nexusRunId: run.id, nexusStepIdx: stepIdx };
+
+    setBusy(true); setErr(null);
+    try {
+      if (isHubNavigation() || typeof (window as unknown as { Pi?: unknown }).Pi === 'undefined') {
+        redirectToHubPayment({ amount, itemId, memo });
+        return;
+      }
+      const internalId = await createPaymentRecord(amount, itemId, memo, link);
+      if (!internalId) { setErr('Could not start the payment — sign in and try again.'); return; }
+      const result = await createU2APayment(amount, memo, link, internalId);
+      if (result.success) {
+        await pollUntilResumed(run.id, stepIdx);
+      } else if (result.status !== 'cancelled') {
+        setErr(result.message || 'Payment failed.');
+      }
+    } catch {
+      setErr('Payment error — try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const btn = (bg: string): React.CSSProperties => ({
     border: 'none', borderRadius: 10, padding: '9px 14px', fontSize: 13, fontWeight: 800,
     color: '#0a0800', background: bg, cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1,
@@ -67,6 +120,7 @@ export function WorkflowRunner({ templateId }: { templateId: string }) {
 
   const canAdvance = run !== null && (run.status === 'PENDING' || run.status === 'RUNNING');
   const canFail    = run !== null && !isTerminal(run.status);
+  const awaitingPay = run !== null && run.status === 'AWAITING_PAYMENT';
 
   return (
     <section style={{
@@ -110,10 +164,17 @@ export function WorkflowRunner({ templateId }: { templateId: string }) {
             })}
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {canAdvance && <button onClick={advance} disabled={busy} style={btn(TEC_COLORS.gold)}>Advance ▸</button>}
-            {canFail    && <button onClick={fail}    disabled={busy} style={ghost}>Simulate failure ↩</button>}
+            {canAdvance  && <button onClick={advance} disabled={busy} style={btn(TEC_COLORS.gold)}>Advance ▸</button>}
+            {awaitingPay && <button onClick={pay}     disabled={busy} style={btn(TEC_COLORS.gold)}>💳 Pay with Pi (1π)</button>}
+            {canFail     && <button onClick={fail}    disabled={busy} style={ghost}>Simulate failure ↩</button>}
             {isTerminal(run.status) && <button onClick={() => { setRun(null); setErr(null); }} style={ghost}>Reset</button>}
           </div>
+          {awaitingPay && (
+            <p style={{ fontSize: 11, color: TEC_COLORS.subtext, margin: '8px 0 0', lineHeight: 1.5 }}>
+              Real Pi via payment-service. On completion the run resumes automatically
+              (Nexus never holds Pi — C-109 §6).
+            </p>
+          )}
         </>
       )}
 

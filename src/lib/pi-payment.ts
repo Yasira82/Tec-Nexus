@@ -63,9 +63,14 @@ export const redirectToHubPayment = (params: {
   window.location.href = `${HUB_URL}/hub?${q.toString()}`;
 };
 
-/** Step 1 — create the payment record in tec-payment-service; returns internal id. */
+/**
+ * Step 1 — create the payment record in tec-payment-service; returns internal id.
+ * `extra` merges into the payment metadata (e.g. a Nexus run link
+ * `{ nexusRunId, nexusStepIdx }`) so the payment.completed event can carry it and the
+ * run resumes automatically. It is stored on the payment; keep it small + non-sensitive.
+ */
 export const createPaymentRecord = async (
-  amount: number, itemId: string, memo: string,
+  amount: number, itemId: string, memo: string, extra?: Record<string, unknown>,
 ): Promise<string | null> => {
   try {
     const token = getToken();
@@ -77,7 +82,7 @@ export const createPaymentRecord = async (
         'x-csrf-token': getCsrfToken(),
         Authorization:  `Bearer ${token}`,
       },
-      body: JSON.stringify({ amount, memo, metadata: { source: APP_SOURCE, item_id: itemId } }),
+      body: JSON.stringify({ amount, memo, metadata: { source: APP_SOURCE, item_id: itemId, ...extra } }),
     });
     if (!res.ok) return null;
     const data = await res.json();
