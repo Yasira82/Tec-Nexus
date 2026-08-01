@@ -11,6 +11,7 @@ import { InviteCard } from '@/components/referral/InviteCard';
 import { usePiAuth } from '@yasser172/tec-auth';
 import { TEC_COLORS } from '@yasser172/tec-ui';
 import { NexusPro } from './components/NexusPro';
+import { WorkflowRecommender } from './components/WorkflowRecommender';
 import { TEMPLATES, KIND_META } from '@/lib/nexus/templates';
 
 export default function NexusHome() {
@@ -45,6 +46,9 @@ export default function NexusHome() {
 
         {/* Nexus Pro — real Pi U2A payment (also the Pi Portal "Process a Transaction" step) */}
         <NexusPro />
+
+        {/* "What should happen next?" — goal → recommended workflow, with a TEC AI hand-off (C-121). */}
+        <WorkflowRecommender />
 
         {/* Coordination Templates — the governed workflows Nexus runs (C-109 §5). */}
         <section style={{ marginTop: 28 }}>
