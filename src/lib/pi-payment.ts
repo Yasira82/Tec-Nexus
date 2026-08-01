@@ -50,7 +50,7 @@ export const isHubNavigation = (): boolean => {
 
 /** Mode 1 — hand the payment off to the Hub modal. `/hub?pay=1` is LOCKED (C-76/ADR-007). */
 export const redirectToHubPayment = (params: {
-  amount: number; itemId: string; memo?: string;
+  amount: number; itemId: string; memo?: string; extra?: Record<string, string>;
 }): void => {
   if (typeof window === 'undefined') return;
   const q = new URLSearchParams({
@@ -59,6 +59,7 @@ export const redirectToHubPayment = (params: {
     amount: String(params.amount),
     item:   params.itemId,
     ...(params.memo ? { memo: params.memo } : {}),
+    ...(params.extra ?? {}),   // e.g. nexus_run / nexus_step → Hub carries them into the payment metadata
   });
   window.location.href = `${HUB_URL}/hub?${q.toString()}`;
 };

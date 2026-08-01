@@ -52,6 +52,22 @@ async function call(path: string, init: RequestInit): Promise<RunResult> {
   }
 }
 
+/** The caller's OWN runs (newest first) — used to RESTORE an active run on return. */
+export async function listRuns(owner: string): Promise<WorkflowRun[]> {
+  if (!GW) return [];
+  try {
+    const res = await fetch(`${GW}/api/identity/nexus/runs/${encodeURIComponent(owner)}`, {
+      headers: gwHeaders(), cache: 'no-store',
+    });
+    if (!res.ok) return [];
+    const body = await res.json().catch(() => ({}));
+    const runs = body?.data?.runs;
+    return Array.isArray(runs) ? (runs as WorkflowRun[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 export const startRun = (owner: string, templateId: string) =>
   call('/api/identity/nexus/runs', { method: 'POST', body: JSON.stringify({ owner, templateId }) });
 
