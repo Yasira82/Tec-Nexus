@@ -50,7 +50,7 @@ export const isHubNavigation = (): boolean => {
 
 /** Mode 1 — hand the payment off to the Hub modal. `/hub?pay=1` is LOCKED (C-76/ADR-007). */
 export const redirectToHubPayment = (params: {
-  amount: number; itemId: string; memo?: string;
+  amount: number; itemId: string; memo?: string; extra?: Record<string, string>;
 }): void => {
   if (typeof window === 'undefined') return;
   const q = new URLSearchParams({
@@ -58,7 +58,13 @@ export const redirectToHubPayment = (params: {
     source: APP_SOURCE,
     amount: String(params.amount),
     item:   params.itemId,
+    // Come back to THIS page after the Hub payment (success or close) instead of
+    // being stranded on /hub — the Hub honours return_url (defaults to /hub when
+    // absent). For a workflow-run payment this lands back on /workflow/[id], where
+    // the runner restores the (now-resumed) run and shows the next step.
+    return_url: window.location.href,
     ...(params.memo ? { memo: params.memo } : {}),
+    ...(params.extra ?? {}),   // e.g. nexus_run / nexus_step → Hub carries them into the payment metadata
   });
   window.location.href = `${HUB_URL}/hub?${q.toString()}`;
 };

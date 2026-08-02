@@ -6,7 +6,7 @@
 // Invariant #8); Fail triggers the real saga rollback (compensations in reverse).
 // The status shown is the backend's real run state — not a mock.
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TEC_COLORS } from '@yasser172/tec-ui';
 import {
   isHubNavigation, redirectToHubPayment, createPaymentRecord, createU2APayment,
@@ -35,6 +35,36 @@ export function WorkflowRunner({ templateId }: { templateId: string }) {
   const [run, setRun]   = useState<Run | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr]   = useState<string | null>(null);
+  const [restoring, setRestoring] = useState(true);
+
+  // RESTORE an active run on mount so a run is never lost / restarted from scratch —
+  // e.g. after a payment round-trip through the Hub, coming back resumes the SAME run
+  // (its steps are already advanced server-side) instead of starting over.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res  = await fetch(`/api/bff/nexus/runs?template=${encodeURIComponent(templateId)}`, { cache: 'no-store' });
+        const data = await res.json().catch(() => ({}));
+        const runs = (data?.runs ?? []) as Run[];
+        const active = runs.find((r) => !isTerminal(r.status));   // newest-first from the backend
+        if (alive && active) {
+          setRun(active);
+          // Returned from a Hub (Mode-1) payment: the run resumes ASYNC server-side
+          // (payment.completed.v1 → Nexus consumer). If we landed back while it's still
+          // AWAITING_PAYMENT, poll until the consumer advances it — otherwise the page
+          // would show the payment step as still pending even though it succeeded.
+          const back = new URLSearchParams(window.location.search).get('payment_status');
+          if (back === 'success' && active.status === 'AWAITING_PAYMENT') {
+            window.history.replaceState({}, '', window.location.pathname);
+            void pollUntilResumed(active.id, active.cursor);
+          }
+        }
+      } catch { /* no restore — user can Start a fresh run */ }
+      finally { if (alive) setRestoring(false); }
+    })();
+    return () => { alive = false; };
+  }, [templateId]);
 
   const post = async (url: string, body?: unknown): Promise<Run | null> => {
     setBusy(true); setErr(null);
@@ -76,9 +106,10 @@ export function WorkflowRunner({ templateId }: { templateId: string }) {
   };
 
   // Pay a run's U2A step with REAL Pi. ADR-007: guard before window.Pi — hub entry →
-  // Mode 1 (Hub modal; the run does NOT auto-resume in Mode 1 yet). Standalone Pi
-  // Browser → Mode 2, tagging the payment with { nexusRunId, nexusStepIdx } so the
-  // consumer resumes the run once payment-service confirms completion.
+  // Mode 1 (Hub modal; carries the run link + a return_url back here, so on return the
+  // restore effect polls until the consumer resumes the run). Standalone Pi Browser →
+  // Mode 2, tagging the payment with { nexusRunId, nexusStepIdx } so the consumer
+  // resumes the run once payment-service confirms completion.
   const pay = async () => {
     if (!run || busy) return;
     const stepIdx = run.cursor;
@@ -91,7 +122,9 @@ export function WorkflowRunner({ templateId }: { templateId: string }) {
     setBusy(true); setErr(null);
     try {
       if (isHubNavigation() || typeof (window as unknown as { Pi?: unknown }).Pi === 'undefined') {
-        redirectToHubPayment({ amount, itemId, memo });
+        // Mode 1: carry the run link so the Hub tags the payment → the run resumes on
+        // return (the Hub reads nexus_run / nexus_step into the payment metadata).
+        redirectToHubPayment({ amount, itemId, memo, extra: { nexus_run: run.id, nexus_step: String(stepIdx) } });
         return;
       }
       const internalId = await createPaymentRecord(amount, itemId, memo, link);
@@ -141,7 +174,9 @@ export function WorkflowRunner({ templateId }: { templateId: string }) {
       </p>
 
       {!run ? (
-        <button onClick={start} disabled={busy} style={btn(TEC_COLORS.gold)}>▶ Start run</button>
+        restoring
+          ? <span style={{ fontSize: 12, color: TEC_COLORS.subtext }}>Checking for an active run…</span>
+          : <button onClick={start} disabled={busy} style={btn(TEC_COLORS.gold)}>▶ Start run</button>
       ) : (
         <>
           <div style={{ display: 'grid', gap: 6, marginBottom: 12 }}>
