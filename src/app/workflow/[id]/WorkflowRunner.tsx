@@ -48,7 +48,18 @@ export function WorkflowRunner({ templateId }: { templateId: string }) {
         const data = await res.json().catch(() => ({}));
         const runs = (data?.runs ?? []) as Run[];
         const active = runs.find((r) => !isTerminal(r.status));   // newest-first from the backend
-        if (alive && active) setRun(active);
+        if (alive && active) {
+          setRun(active);
+          // Returned from a Hub (Mode-1) payment: the run resumes ASYNC server-side
+          // (payment.completed.v1 → Nexus consumer). If we landed back while it's still
+          // AWAITING_PAYMENT, poll until the consumer advances it — otherwise the page
+          // would show the payment step as still pending even though it succeeded.
+          const back = new URLSearchParams(window.location.search).get('payment_status');
+          if (back === 'success' && active.status === 'AWAITING_PAYMENT') {
+            window.history.replaceState({}, '', window.location.pathname);
+            void pollUntilResumed(active.id, active.cursor);
+          }
+        }
       } catch { /* no restore — user can Start a fresh run */ }
       finally { if (alive) setRestoring(false); }
     })();
@@ -95,9 +106,10 @@ export function WorkflowRunner({ templateId }: { templateId: string }) {
   };
 
   // Pay a run's U2A step with REAL Pi. ADR-007: guard before window.Pi — hub entry →
-  // Mode 1 (Hub modal; the run does NOT auto-resume in Mode 1 yet). Standalone Pi
-  // Browser → Mode 2, tagging the payment with { nexusRunId, nexusStepIdx } so the
-  // consumer resumes the run once payment-service confirms completion.
+  // Mode 1 (Hub modal; carries the run link + a return_url back here, so on return the
+  // restore effect polls until the consumer resumes the run). Standalone Pi Browser →
+  // Mode 2, tagging the payment with { nexusRunId, nexusStepIdx } so the consumer
+  // resumes the run once payment-service confirms completion.
   const pay = async () => {
     if (!run || busy) return;
     const stepIdx = run.cursor;
