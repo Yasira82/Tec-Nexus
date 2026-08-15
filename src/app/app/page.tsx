@@ -40,7 +40,7 @@ export default function NexusHome() {
           <p style={{ fontSize: 14, color: TEC_COLORS.subtext, margin: '6px 0 0', lineHeight: 1.6 }}>
             The coordination fabric of the TEC ecosystem. Nexus answers one question —
             <strong style={{ color: TEC_COLORS.text }}> “What should happen next?”</strong> — by
-            orchestrating multi-party workflows so complex deals execute automatically (C-109).
+            orchestrating multi-party workflows so complex deals execute automatically.
           </p>
         </header>
 
@@ -58,8 +58,8 @@ export default function NexusHome() {
           </div>
           <p style={{ fontSize: 12, color: TEC_COLORS.subtext, margin: '6px 0 14px', lineHeight: 1.5 }}>
             The governed workflow types Nexus coordinates. Nexus routes each step to its
-            owning service and, for a saga, runs compensating actions in reverse on failure
-            (C-109 §5). Every Pi transfer goes through tec-payment-service (§6). Tap a
+            owning service and, for a saga, runs compensating actions in reverse on failure.
+            Every Pi transfer goes through tec-payment-service. Tap a
             template to see its steps.
           </p>
 
@@ -82,7 +82,7 @@ export default function NexusHome() {
         <p style={{ fontSize: 11, color: TEC_COLORS.subtext, margin: '24px 0 0', lineHeight: 1.5 }}>
           Nexus orchestrates workflows; it never owns the business rules inside them,
           payment processing, or any entity’s truth — those stay with their owning
-          services and are coordinated by ID only (C-109 §4). Every Pi transfer goes
+          services and are coordinated by ID only. Every Pi transfer goes
           through tec-payment-service; Nexus never bypasses it (P6, §6).
         </p>
         <InviteCard />

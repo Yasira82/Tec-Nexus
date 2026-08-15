@@ -166,7 +166,7 @@ export function NexusPro() {
       <div style={{ fontSize: 12, color: TEC_COLORS.subtext, marginTop: 8, lineHeight: 1.5 }}>
         For teams and merchants — custom workflow templates, multi-party
         coordination, and saga-backed reliability (compensating rollback on
-        failure). Automate complex economic activity end-to-end (C-109 §7).
+        failure). Automate complex economic activity end-to-end.
       </div>
 
       <button
