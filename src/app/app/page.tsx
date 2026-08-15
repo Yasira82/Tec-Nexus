@@ -40,7 +40,7 @@ export default function NexusHome() {
           <p style={{ fontSize: 14, color: TEC_COLORS.subtext, margin: '6px 0 0', lineHeight: 1.6 }}>
             The coordination fabric of the TEC ecosystem. Nexus answers one question —
             <strong style={{ color: TEC_COLORS.text }}> “What should happen next?”</strong> — by
-            orchestrating multi-party workflows so complex deals execute automatically.
+            coordinating multi-step deals so they run smoothly from start to finish.
           </p>
         </header>
 
@@ -57,10 +57,9 @@ export default function NexusHome() {
             <span style={{ fontSize: 11, color: TEC_COLORS.subtext, border: `1px solid ${TEC_COLORS.gold}33`, borderRadius: 999, padding: '2px 10px' }}>definitions · execution V1</span>
           </div>
           <p style={{ fontSize: 12, color: TEC_COLORS.subtext, margin: '6px 0 14px', lineHeight: 1.5 }}>
-            The governed workflow types Nexus coordinates. Nexus routes each step to its
-            owning service and, for a saga, runs compensating actions in reverse on failure.
-            Every Pi transfer goes through tec-payment-service. Tap a
-            template to see its steps.
+            The workflow types Nexus coordinates. Each step runs through the right place, and
+            if something fails partway, the steps safely reverse so nothing is left
+            half-done. Tap a template to see its steps.
           </p>
 
           <div style={{ display: 'grid', gap: 10 }}>
@@ -80,10 +79,8 @@ export default function NexusHome() {
         </section>
 
         <p style={{ fontSize: 11, color: TEC_COLORS.subtext, margin: '24px 0 0', lineHeight: 1.5 }}>
-          Nexus orchestrates workflows; it never owns the business rules inside them,
-          payment processing, or any entity’s truth — those stay with their owning
-          services and are coordinated by ID only. Every Pi transfer goes
-          through tec-payment-service; Nexus never bypasses it (P6, §6).
+          Nexus coordinates multi-step workflows across TEC. It never handles payments
+          itself — every Pi transfer goes through the secure payment system.
         </p>
         <InviteCard />
       </div>
