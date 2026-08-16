@@ -9,6 +9,7 @@
 import Link from 'next/link';
 import { InviteCard } from '@/components/referral/InviteCard';
 import { usePiAuth } from '@yasser172/tec-auth';
+import { useMe } from '@/lib-client/hooks/useMe';
 import { TEC_COLORS } from '@yasser172/tec-ui';
 import { NexusPro } from './components/NexusPro';
 import { WorkflowRecommender } from './components/WorkflowRecommender';
@@ -16,7 +17,9 @@ import { TEMPLATES, KIND_META } from '@/lib/nexus/templates';
 
 export default function NexusHome() {
   const { user, isLoading } = usePiAuth();
-  const name = user?.piUsername ? `@${user.piUsername}` : '';
+  const me = useMe(); // server-resolved Pi username (Pi Browser hides tec_user from client JS — C-123 §3)
+  const piName = me.username ?? user?.piUsername ?? null;
+  const name = piName ? `@${piName}` : '';
 
   const templateCard: React.CSSProperties = {
     display: 'block', textDecoration: 'none',
