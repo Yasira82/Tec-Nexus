@@ -81,7 +81,7 @@ export default async function WorkflowPage(
           <>
             <h2 style={{ fontSize: 15, fontWeight: 800, color: TEC_COLORS.text, margin: '26px 0 4px' }}>Compensating actions</h2>
             <p style={{ fontSize: 12, color: TEC_COLORS.subtext, margin: '0 0 10px', lineHeight: 1.5 }}>
-              Run in reverse if a step fails — the saga leaves no partial state (C-109 §5).
+              If a step fails, these run in reverse so nothing is left half-done.
             </p>
             <div style={{ display: 'grid', gap: 8 }}>
               {t.compensations.map((c, i) => (
@@ -95,10 +95,8 @@ export default async function WorkflowPage(
         )}
 
         <p style={{ fontSize: 11, color: TEC_COLORS.subtext, margin: '22px 0 0', lineHeight: 1.5 }}>
-          Nexus routes each step to its owning service and carries the original actor’s
-          context through every step (C-109 P1-1). It never runs the business rule inside
-          a step, and never moves Pi outside tec-payment-service (§6). Execution is the V1
-          workflow engine; this page is the governed definition.
+          Nexus routes each step to the right place and keeps track of who started it.
+          It never handles the payment itself or moves your Pi.
         </p>
       </div>
     </main>

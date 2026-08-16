@@ -170,7 +170,7 @@ export function WorkflowRunner({ templateId }: { templateId: string }) {
       </div>
       <p style={{ fontSize: 11, color: TEC_COLORS.subtext, margin: '5px 0 12px', lineHeight: 1.5 }}>
         Drives the real engine. Payment steps halt at “awaiting your payment” — Nexus never moves Pi
-        itself (C-109 §6). “Fail” triggers the saga rollback so no partial state is left.
+        itself. “Fail” safely reverses the completed steps so nothing is left half-done.
       </p>
 
       {!run ? (
@@ -206,8 +206,8 @@ export function WorkflowRunner({ templateId }: { templateId: string }) {
           </div>
           {awaitingPay && (
             <p style={{ fontSize: 11, color: TEC_COLORS.subtext, margin: '8px 0 0', lineHeight: 1.5 }}>
-              Real Pi via payment-service. On completion the run resumes automatically
-              (Nexus never holds Pi — C-109 §6).
+              Real Pi payment. When it completes, the workflow resumes automatically —
+              Nexus never holds your Pi.
             </p>
           )}
         </>
