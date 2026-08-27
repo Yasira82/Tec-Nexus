@@ -20,9 +20,9 @@ interface Run  { id: string; status: RunStatus; cursor: number; steps: Step[] }
 const STEP_STYLE: Record<StepStatus, { label: string; color: string }> = {
   PENDING:            { label: '•  pending',            color: '#8a8a9a' },
   DONE:               { label: '✓  done',               color: '#22C55E' },
-  BLOCKED_ON_PAYMENT: { label: '⏸  awaiting payment',   color: '#FBBF24' },
+  BLOCKED_ON_PAYMENT: { label: '⏸  awaiting payment',   color: '#FBB44A' },
   FAILED:             { label: '✕  failed',             color: '#EF4444' },
-  COMPENSATED:        { label: '↩  rolled back',        color: '#F59E0B' },
+  COMPENSATED:        { label: '↩  rolled back',        color: '#E8962A' },
 };
 const RUN_LABEL: Record<RunStatus, string> = {
   PENDING: 'ready', RUNNING: 'running', AWAITING_PAYMENT: 'awaiting your payment',
