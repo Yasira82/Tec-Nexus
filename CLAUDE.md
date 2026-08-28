@@ -133,13 +133,13 @@ Nexus V0 — App Scaffold & Portal Readiness (customized from template):
   ✅ layout Pi init is hub-entry-aware (C-12 §3 / ADR-007 foreign-session skip)
   ✅ /app themed as the Coordination home shell + Nexus Pro (real Pi U2A payment)
 
-Next (before live):
-  □ Register Pi App ID (Pi Developer Portal) → set Vercel NEXT_PUBLIC_PI_APP_ID +
+Live on Mainnet — all complete (SSoT: architecture/app-fleet.yaml):
+  ✅ Register Pi App ID (Pi Developer Portal) → set Vercel NEXT_PUBLIC_PI_APP_ID +
     API_GATEWAY_URL · INTERNAL_SECRET · SSO_SECRET · PI_SANDBOX=false.
-  □ payment-service: set PI_API_KEY_NEXUS on Railway (approve→502 otherwise, C-12 §11).
-  □ Hub SSO: add nexus.tecosystem.app + tec-nexus.vercel.app to Hub /api/auth/sso
+  ✅ payment-service: set PI_API_KEY_NEXUS on Railway (approve→502 otherwise, C-12 §11).
+  ✅ Hub SSO: add nexus.tecosystem.app + tec-nexus.vercel.app to Hub /api/auth/sso
     ALLOWED_TARGETS + Hub domain registry (both in this change).
-  □ Deploy (Vercel) + runtime-verify login (C-123) + a real Nexus Pro payment
+  ✅ Deploy (Vercel) + runtime-verify login (C-123) + a real Nexus Pro payment
     Mode 1 (Hub) AND Mode 2 (standalone) — completes the Portal "Process a Transaction" gate.
 
 Nexus V1+ (post-Portal — C-109 §10): Phase 1 sequential workflows + payment/asset
