@@ -32,6 +32,8 @@ export interface PaymentResult {
 // Nexus slug — payment-service resolves PI_API_KEY_NEXUS.
 const APP_SOURCE = 'nexus';
 
+import { hubPaymentOrigin } from '@/lib/pi-network';
+
 const HUB_URL = process.env.NEXT_PUBLIC_HUB_URL ?? 'https://hub.tecosystem.app';
 
 /**
@@ -66,7 +68,7 @@ export const redirectToHubPayment = (params: {
     ...(params.memo ? { memo: params.memo } : {}),
     ...(params.extra ?? {}),   // e.g. nexus_run / nexus_step → Hub carries them into the payment metadata
   });
-  window.location.href = `${HUB_URL}/hub?${q.toString()}`;
+  window.location.href = `${hubPaymentOrigin(HUB_URL)}/hub?${q.toString()}`;
 };
 
 /**
