@@ -32,6 +32,9 @@ export interface PaymentResult {
 // Nexus slug — payment-service resolves PI_API_KEY_NEXUS.
 const APP_SOURCE = 'nexus';
 
+import { hubPaymentOrigin, isHubReferrer } from '@/lib/pi-network';
+import { piSession } from '@/lib/pi/pi-session';
+
 const HUB_URL = process.env.NEXT_PUBLIC_HUB_URL ?? 'https://hub.tecosystem.app';
 
 /**
@@ -39,13 +42,19 @@ const HUB_URL = process.env.NEXT_PUBLIC_HUB_URL ?? 'https://hub.tecosystem.app';
  * Two signals (C-12 §3): the sessionStorage flag persisted by the SSO landing
  * page (the C-123 LAW-2 landing erases the hub referrer via location.replace),
  * with document.referrer as fallback for direct hub→app hops.
+ *
+ * The referrer test covers BOTH Hub hosts (`isHubReferrer`). It used to name
+ * only the Mainnet Hub, so a hop from the Testnet Hub read as standalone and
+ * this app called Pi.authenticate() inside a session the Hub owns — which never
+ * answers, and shows up only as the 90s payment timeout with the Pi wallet
+ * never opening. See pi-network.ts for the full note.
  */
 export const isHubNavigation = (): boolean => {
   if (typeof window === 'undefined') return false;
   try {
     if (window.sessionStorage.getItem('__tec_hub_entry') === '1') return true;
   } catch { /* storage unavailable — fall back to referrer */ }
-  return document.referrer.toLowerCase().includes('hub.tecosystem.app');
+  return isHubReferrer(document.referrer);
 };
 
 /** Mode 1 — hand the payment off to the Hub modal. `/hub?pay=1` is LOCKED (C-76/ADR-007). */
@@ -66,7 +75,7 @@ export const redirectToHubPayment = (params: {
     ...(params.memo ? { memo: params.memo } : {}),
     ...(params.extra ?? {}),   // e.g. nexus_run / nexus_step → Hub carries them into the payment metadata
   });
-  window.location.href = `${HUB_URL}/hub?${q.toString()}`;
+  window.location.href = `${hubPaymentOrigin(HUB_URL)}/hub?${q.toString()}`;
 };
 
 /**
@@ -112,19 +121,13 @@ export const createU2APayment = async (
     const headers: Record<string, string> = { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    try {
-      await window.Pi.authenticate(['username', 'payments'], async (incomplete: unknown) => {
-        const pid = (incomplete as { identifier?: string } | null)?.identifier;
-        if (!pid) return;
-        try {
-          await fetch('/api/bff/payment/resolve-incomplete', {
-            method: 'POST', credentials: 'include', headers,
-            body: JSON.stringify({ pi_payment_id: pid }),
-          });
-        } catch {}
-      });
-    } catch (authErr) {
-      done({ status: 'error', success: false, message: 'Pi auth failed: ' + (authErr instanceof Error ? authErr.message : String(authErr)) });
+    // The handshake normally already happened at page load (PiWarmup), so this
+    // resolves immediately and the tap goes straight to createPayment. It is a
+    // gate, not a second call: if a warm-up is still running this JOINS it —
+    // two concurrent Pi.authenticate calls are what Pi Browser answers neither
+    // of. See lib/pi/pi-session.ts.
+    if (!(await piSession.ensureAuth())) {
+      done({ status: 'error', success: false, message: 'Pi auth failed — please try again.' });
       return;
     }
 
