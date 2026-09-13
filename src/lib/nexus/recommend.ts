@@ -6,7 +6,20 @@
 // template definitions only. For open-ended reasoning beyond the catalog, the UI hands
 // off to TEC AI (the Hub assistant); Nexus stays the owner of the workflow catalog.
 
-import { TEMPLATES, type WorkflowTemplate } from './templates';
+import { TEMPLATE_COPY, type WorkflowKind } from './templates';
+
+/**
+ * What the ranker needs to score a template. It is SUPPLIED, not imported: the
+ * catalog belongs to the engine, and this file used to import a bundled copy of it
+ * that had drifted out of date. A recommender scoring stale definitions would point
+ * people at workflows whose steps no longer exist.
+ */
+export interface RankableTemplate {
+  id:    string;
+  name:  string;
+  kind:  string;
+  steps: { action: string }[];
+}
 
 // Curated intent keywords per template — the vocabulary a user actually types, mapped
 // to the workflow that satisfies it. Kept next to the catalog so it stays in sync.
@@ -39,30 +52,37 @@ const tokenize = (s: string): string[] =>
 export interface Recommendation {
   id:      string;
   name:    string;
-  kind:    WorkflowTemplate['kind'];
+  kind:    WorkflowKind | string;
   purpose: string;
   score:   number;
 }
 
 /**
- * Rank templates for `goal`. A keyword hit weighs most; a token also appearing in the
+ * Rank `catalog` for `goal`. A keyword hit weighs most; a token also appearing in the
  * template's own text (name/purpose/trigger/steps) adds a smaller amount. Returns only
- * positive-score matches, best first. Empty goal or no match → [].
+ * positive-score matches, best first. Empty goal, empty catalog, or no match → [].
+ *
+ * Still deterministic and local — it scores what it is handed and calls nothing.
  */
-export function recommendWorkflows(goal: string, limit = 3): Recommendation[] {
+export function recommendWorkflows(
+  goal: string,
+  catalog: RankableTemplate[],
+  limit = 3,
+): Recommendation[] {
   const tokens = tokenize(goal ?? '');
-  if (tokens.length === 0) return [];
+  if (tokens.length === 0 || catalog.length === 0) return [];
 
-  return TEMPLATES
+  return catalog
     .map((t) => {
+      const copy = TEMPLATE_COPY[t.id];
       const kw   = new Set(KEYWORDS[t.id] ?? []);
-      const text = `${t.name} ${t.purpose} ${t.trigger} ${t.steps.map((s) => s.action).join(' ')}`.toLowerCase();
+      const text = `${t.name} ${copy?.purpose ?? ''} ${copy?.trigger ?? ''} ${t.steps.map((s) => s.action).join(' ')}`.toLowerCase();
       let score = 0;
       for (const tok of tokens) {
         if (kw.has(tok))        score += 3;
         else if (text.includes(tok)) score += 1;
       }
-      return { id: t.id, name: t.name, kind: t.kind, purpose: t.purpose, score };
+      return { id: t.id, name: t.name, kind: t.kind, purpose: copy?.purpose ?? '', score };
     })
     .filter((r) => r.score > 0)
     .sort((a, b) => b.score - a.score)
