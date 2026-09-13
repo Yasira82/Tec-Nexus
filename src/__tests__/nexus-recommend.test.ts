@@ -1,7 +1,39 @@
 import { describe, it, expect } from 'vitest';
-import { recommendWorkflows } from '@/lib/nexus/recommend';
+import { recommendWorkflows, type RankableTemplate } from '@/lib/nexus/recommend';
 
-const top = (goal: string): string | undefined => recommendWorkflows(goal)[0]?.id;
+// The catalog is now SUPPLIED (it belongs to the engine, not to this app), so these
+// score against a fixture shaped like what `GET /identity/nexus/templates` returns.
+// The step text is the engine's current wording — a 3-step saga, no second payment
+// step, because that is what the engine actually defines.
+const CATALOG: RankableTemplate[] = [
+  {
+    id: 'checkout-saga', name: 'Checkout Saga', kind: 'saga',
+    steps: [
+      { action: 'Reserve inventory for the order' },
+      { action: 'Pay with Pi (U2A)' },
+      { action: 'Confirm the order against the completed payment' },
+    ],
+  },
+  {
+    id: 'asset-transfer-saga', name: 'Asset Transfer Saga', kind: 'saga',
+    steps: [
+      { action: 'Reserve the listed asset while the buyer pays' },
+      { action: 'Pay with Pi (U2A)' },
+      { action: 'Transfer ownership to the buyer' },
+    ],
+  },
+  {
+    id: 'subscription-renewal', name: 'Subscription Renewal', kind: 'sequential',
+    steps: [
+      { action: 'Check the subscription is renewable' },
+      { action: 'Pay with Pi (U2A)' },
+      { action: 'Extend the subscription period' },
+    ],
+  },
+];
+
+const recommend = (goal: string) => recommendWorkflows(goal, CATALOG);
+const top = (goal: string): string | undefined => recommend(goal)[0]?.id;
 
 describe('TEC Nexus — workflow recommender (C-109 · C-121)', () => {
   it('matches a checkout/selling goal to the checkout saga (EN + AR)', () => {
@@ -20,7 +52,7 @@ describe('TEC Nexus — workflow recommender (C-109 · C-121)', () => {
   });
 
   it('ranks by relevance, best first', () => {
-    const r = recommendWorkflows('checkout order payment inventory');
+    const r = recommend('checkout order payment inventory');
     expect(r[0]?.id).toBe('checkout-saga');
     expect(r[0]?.score ?? 0).toBeGreaterThan(0);
     // scores are monotonically non-increasing
@@ -30,8 +62,8 @@ describe('TEC Nexus — workflow recommender (C-109 · C-121)', () => {
   });
 
   it('returns [] for an empty or unrelated goal (never fabricates a match)', () => {
-    expect(recommendWorkflows('')).toEqual([]);
-    expect(recommendWorkflows('   ')).toEqual([]);
-    expect(recommendWorkflows('the weather today')).toEqual([]);
+    expect(recommend('')).toEqual([]);
+    expect(recommend('   ')).toEqual([]);
+    expect(recommend('the weather today')).toEqual([]);
   });
 });

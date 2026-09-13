@@ -8,9 +8,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { TEC_COLORS } from '@yasser172/tec-ui';
-import { KIND_META } from '@/lib/nexus/templates';
+import { kindMeta } from '@/lib/nexus/templates';
 
-interface Match { id: string; name: string; kind: keyof typeof KIND_META; purpose: string; score: number }
+interface Match { id: string; name: string; kind: string; purpose: string; score: number }
 
 const HUB = (process.env.NEXT_PUBLIC_HUB_URL || 'https://hub.tecosystem.app').replace(/\/$/, '');
 const askTecAiHref = (goal: string) =>
@@ -83,7 +83,7 @@ export function WorkflowRecommender() {
             matches.map((m) => (
               <Link key={m.id} href={`/workflow/${m.id}`} style={card}>
                 <div style={{ fontSize: 14, fontWeight: 800, color: TEC_COLORS.text }}>
-                  {KIND_META[m.kind].icon} {m.name}
+                  {kindMeta(m.kind).icon} {m.name}
                 </div>
                 <div style={{ fontSize: 12, color: TEC_COLORS.subtext, marginTop: 4, lineHeight: 1.5 }}>{m.purpose}</div>
               </Link>
