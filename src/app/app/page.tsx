@@ -1,5 +1,7 @@
 'use client';
 
+import { SignInGate } from '@/components/pi/SignInGate';
+
 // TEC Nexus — the Coordination Runtime of the TEC ecosystem (C-109). Nexus
 // answers one question: "What should happen next?" It orchestrates economic
 // coordination between actors (users, merchants, services, AI agents) through
@@ -26,7 +28,7 @@ interface CatalogTemplate {
   purpose: string | null; trigger: string | null;
 }
 
-export default function NexusHome() {
+function NexusHome() {
   const { t } = useTranslation();
   const { user, isLoading } = usePiAuth();
   const me = useMe(); // server-resolved Pi username (Pi Browser hides tec_user from client JS — C-123 §3)
@@ -172,4 +174,11 @@ export default function NexusHome() {
       <BottomNav active={tab} onSelect={setTab} />
     </main>
   );
+}
+
+// The door: a sign-in button before any screen when there is no session
+// (SignInGate — C-123 §10; owner, 2026-10-06). A visit from the Hub arrives
+// signed in (§12) and goes straight through.
+export default function NexusHomeGated() {
+  return <SignInGate><NexusHome /></SignInGate>;
 }
