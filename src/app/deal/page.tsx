@@ -18,21 +18,28 @@ function NewDeal() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [mine, setMine] = useState<Handshake[] | null>(null);
+  const [mineDown, setMineDown] = useState(false);
 
   useEffect(() => {
     let alive = true;
     fetch('/api/bff/nexus/handshakes', { credentials: 'include', cache: 'no-store' })
-      .then((r) => r.json().catch(() => null))
-      .then((d) => { if (alive) setMine(Array.isArray(d?.handshakes) ? d.handshakes : []); })
-      .catch(() => { if (alive) setMine([]); });
+      .then(async (r) => ({ ok: r.ok, d: await r.json().catch(() => null) }))
+      .then(({ ok, d }) => {
+        if (!alive) return;
+        // A list that could not be read says so — never "none yet" over a failure.
+        if (ok && Array.isArray(d?.handshakes)) setMine(d.handshakes); else setMineDown(true);
+      })
+      .catch(() => { if (alive) setMineDown(true); });
     return () => { alive = false; };
   }, []);
 
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF((p) => ({ ...p, [k]: e.target.value }));
   const amountOk = /^\d+(\.\d{1,7})?$/.test(f.amount.trim()) && Number(f.amount) > 0;
-  const ready = f.title.trim() && amountOk && isWallet(f.wallet) && !busy;
+  // The button is never silently dead: pressing it with a gap says which field is missing.
+  const missing = !f.title.trim() ? c.needTitle : !amountOk ? c.needAmount : !isWallet(f.wallet) ? c.needWallet : null;
 
   const submit = async () => {
+    if (missing) { setErr(missing); return; }
     setBusy(true); setErr(null);
     const r = await hsPost<{ handshake: Handshake | null }>('/api/bff/nexus/handshakes', { ...f, amount: f.amount.trim(), wallet: f.wallet.trim() });
     if (r.ok && r.data.handshake) { router.push(`/h/${r.data.handshake.code}`); return; }
@@ -67,14 +74,15 @@ function NewDeal() {
           <div style={{ fontSize: 11, color: f.wallet && !isWallet(f.wallet) ? TEC_COLORS.red : TEC_COLORS.subtext, marginTop: 6 }}>{c.fWalletHint}</div>
 
           {err && <div style={{ fontSize: 13, color: TEC_COLORS.red, marginTop: 12 }}>{err}</div>}
-          <button style={{ ...primary, opacity: ready ? 1 : 0.5 }} disabled={!ready} onClick={() => { void submit(); }}>
+          <button style={{ ...primary, opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={() => { void submit(); }}>
             {busy ? c.creating : c.create}
           </button>
           <p style={{ fontSize: 11, color: TEC_COLORS.subtext, margin: '10px 0 0', lineHeight: 1.5 }}>{c.recorded}</p>
         </section>
 
         <h2 style={{ fontSize: 15, fontWeight: 800, margin: '26px 0 0' }}>{c.mine}</h2>
-        {mine === null && <div style={{ fontSize: 12, color: TEC_COLORS.subtext, marginTop: 8 }}>{c.loading}</div>}
+        {mineDown && <div style={{ fontSize: 12, color: TEC_COLORS.subtext, marginTop: 8 }}>{c.unavailable}</div>}
+        {mine === null && !mineDown && <div style={{ fontSize: 12, color: TEC_COLORS.subtext, marginTop: 8 }}>{c.loading}</div>}
         {mine?.length === 0 && <div style={{ fontSize: 12, color: TEC_COLORS.subtext, marginTop: 8 }}>{c.mineEmpty}</div>}
         <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
           {(mine ?? []).map((h) => (

@@ -43,7 +43,7 @@ export const card: React.CSSProperties = {
 export const label: React.CSSProperties = { fontSize: 12, color: TEC_COLORS.subtext, display: 'block', marginBottom: 6 };
 export const input: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box', padding: '11px 12px', fontSize: 15, borderRadius: 10,
-  border: `1px solid ${TEC_COLORS.gold}33`, background: TEC_COLORS.bg, color: TEC_COLORS.text, outline: 'none',
+  border: `1px solid ${TEC_COLORS.gold}33`, background: TEC_COLORS.bg, color: TEC_COLORS.text, outline: 'none', fontFamily: 'inherit',
 };
 export const primary: React.CSSProperties = {
   width: '100%', padding: '13px 16px', fontSize: 15, fontWeight: 800, borderRadius: 12, border: 'none',
