@@ -20,6 +20,7 @@ import { WorkflowRecommender } from './components/WorkflowRecommender';
 import { BottomNav, type NexusTab } from './components/BottomNav';
 import { SettingsView } from './components/SettingsView';
 import { kindMeta } from '@/lib/nexus/templates';
+import { HS_COPY } from '@/lib/nexus/handshake-copy';
 
 /** A template as the BFF returns it: the ENGINE's definition + this app's blurb. */
 interface CatalogTemplate {
@@ -29,7 +30,8 @@ interface CatalogTemplate {
 }
 
 function NexusHome() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const hs = HS_COPY[locale];
   const { user, isLoading } = usePiAuth();
   const me = useMe(); // server-resolved Pi username (Pi Browser hides tec_user from client JS — C-123 §3)
   const piName = me.username ?? user?.piUsername ?? null;
@@ -91,6 +93,12 @@ function NexusHome() {
 
         {/* ── HOME ────────────────────────────────────────────────── */}
         {tab === 'home' && (<>
+          {/* Nexus Handshake — a deal between two Pioneers, payment confirmed on the Pi chain. */}
+          <Link href="/deal" style={{ ...templateCard, marginTop: 20, border: `1px solid ${TEC_COLORS.gold}55` }}>
+            <div style={{ fontSize: 15, fontWeight: 900, color: TEC_COLORS.gold }}>🤝 {hs.homeCard}</div>
+            <div style={{ fontSize: 12, color: TEC_COLORS.subtext, marginTop: 5, lineHeight: 1.5 }}>{hs.homeCardBody}</div>
+          </Link>
+
           {/* "What should happen next?" — goal → recommended workflow, with a TEC AI hand-off (C-121). */}
           <div style={{ marginTop: 20 }}>
             <WorkflowRecommender />
