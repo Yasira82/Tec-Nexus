@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server';
+import { gatewayFetch } from '@/lib/gateway-fetch';
 
 // Server-only access to the Nexus Workflow Run Engine (identity-service) via the
 // gateway with the inter-service key. Runs are owner-scoped: `owner` is derived from
@@ -64,7 +65,7 @@ export function userIdFromSession(req: NextRequest): string | null {
 async function call(path: string, init: RequestInit): Promise<RunResult> {
   if (!GW) return { ok: false, run: null, status: 503, error: 'unavailable' };
   try {
-    const res  = await fetch(`${GW}${path}`, { ...init, headers: gwHeaders(), cache: 'no-store' });
+    const res  = await gatewayFetch(`${GW}${path}`, { ...init, headers: gwHeaders(), cache: 'no-store' });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) return { ok: false, run: null, status: res.status, error: body?.message ?? 'error' };
     return { ok: true, run: (body?.data?.run ?? null) as WorkflowRun | null, status: 200 };
@@ -77,7 +78,7 @@ async function call(path: string, init: RequestInit): Promise<RunResult> {
 export async function listRuns(owner: string): Promise<WorkflowRun[]> {
   if (!GW) return [];
   try {
-    const res = await fetch(`${GW}/api/identity/nexus/runs/${encodeURIComponent(owner)}`, {
+    const res = await gatewayFetch(`${GW}/api/identity/nexus/runs/${encodeURIComponent(owner)}`, {
       headers: gwHeaders(), cache: 'no-store',
     });
     if (!res.ok) return [];
@@ -124,7 +125,7 @@ export const startRun = (
 export async function fetchTemplates(): Promise<EngineTemplateDto[] | null> {
   if (!GW) return null;
   try {
-    const res = await fetch(`${GW}/api/identity/nexus/templates`, {
+    const res = await gatewayFetch(`${GW}/api/identity/nexus/templates`, {
       headers: gwHeaders(), cache: 'no-store',
     });
     if (!res.ok) return null;

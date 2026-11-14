@@ -1,3 +1,4 @@
+import { gatewayFetch } from '@/lib/gateway-fetch';
 // Server-only access to Nexus Handshake (identity/nexus/handshakes in tec-nexus-service), through the
 // gateway with the inter-service key. Who acts — `owner` (Pi username) and `userId` — is resolved
 // from the session cookie by the BFF route, never from the body (P6). The deal's own fields (title,
@@ -29,7 +30,7 @@ export interface HsResult<T> { ok: boolean; status: number; data: T | null; erro
 async function call<T>(path: string, init: RequestInit, pick: (data: Record<string, unknown>) => T): Promise<HsResult<T>> {
   if (!GW) return { ok: false, status: 503, data: null, error: 'unavailable' };
   try {
-    const res = await fetch(`${GW}/api/identity/nexus/handshakes${path}`, { ...init, headers: gwHeaders(), cache: 'no-store' });
+    const res = await gatewayFetch(`${GW}/api/identity/nexus/handshakes${path}`, { ...init, headers: gwHeaders(), cache: 'no-store' });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
       const m = body?.message;
