@@ -65,7 +65,7 @@ export function userIdFromSession(req: NextRequest): string | null {
 async function call(path: string, init: RequestInit): Promise<RunResult> {
   if (!GW) return { ok: false, run: null, status: 503, error: 'unavailable' };
   try {
-    const res  = await fetch(`${GW}${path}`, { ...init, headers: gwHeaders(), cache: 'no-store' });
+    const res  = await gatewayFetch(`${GW}${path}`, { ...init, headers: gwHeaders(), cache: 'no-store' });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) return { ok: false, run: null, status: res.status, error: body?.message ?? 'error' };
     return { ok: true, run: (body?.data?.run ?? null) as WorkflowRun | null, status: 200 };
